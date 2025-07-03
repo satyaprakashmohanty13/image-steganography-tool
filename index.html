@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Steganography</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; }
+    input, textarea, button { width: 100%; margin: 0.5rem 0; padding: 0.6rem; font-size: 1rem; }
+    button { background-color: #0066ff; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #004fc5; }
+    img { max-width: 100%; border: 1px solid #ccc; margin-top: 1rem; }
+    #outputBox { margin-top: 1.5rem; padding: 1rem; background: #f0f0f0; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 Hide Secret in Image</h2>
+
+  <label>Select PNG Image:
+    <input type="file" id="imageInput" accept="image/png">
+  </label>
+
+  <label>Secret Message:
+    <textarea id="messageInput" rows="4" placeholder="Enter secret message..."></textarea>
+  </label>
+
+  <button onclick="uploadImage()">Upload & Encode</button>
+
+  <div id="uploadResult" style="margin-top: 1rem; color: green;"></div>
+
+  <hr style="margin: 2rem 0">
+
+  <h2>🕵️ Reveal Hidden Message</h2>
+
+  <label>Enter Key:
+    <input type="text" id="keyInput" placeholder="e.g. abc123">
+  </label>
+
+  <button onclick="decodeMessage()">Decode Message</button>
+
+  <div id="outputBox" style="display:none;">
+    <strong>🔍 Decoded Message:</strong>
+    <p id="decodedText"></p>
+    <img id="decodedImage" />
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
