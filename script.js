@@ -1,4 +1,4 @@
-const backendURL = "https://<your-render-backend>.onrender.com";
+const backendURL = "https://image-backend-vaxv.onrender.com";
 
 async function encode() {
   const image = document.getElementById('encode-image').files[0];
