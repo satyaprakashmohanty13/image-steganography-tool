@@ -24,6 +24,35 @@
     .hidden {
       display: none;
     }
+
+    /* Loader styles */
+    #loader {
+      display: none;
+      margin: 1em auto;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 5px solid #ccc;
+      border-top: 5px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      margin-top: 0.5em;
+      font-weight: bold;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -38,6 +67,11 @@
   <input type="password" id="decodePassword" placeholder="Password"/><br/>
   <button onclick="decodeImage()">Decode Message</button>
 
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">Processing...</div>
+  </div>
+
   <h3>🔽 Encoded Image</h3>
   <a id="downloadLink" class="hidden" download="stego.png">Download Image</a><br/>
   <img id="outputImage" class="hidden"/>
@@ -46,7 +80,11 @@
   <p id="decodedMessage"></p>
 
   <script>
-    const backendURL = 'https://image-stego-python.onrender.com'; // 🔁 Replace with your real backend
+    const backendURL = 'https://your-backend-url.onrender.com'; // 🔁 Replace with your real backend
+
+    const loader = document.getElementById('loader');
+    function showLoader() { loader.style.display = 'block'; }
+    function hideLoader() { loader.style.display = 'none'; }
 
     async function encodeImage() {
       const input = document.getElementById('imageInput').files[0];
@@ -72,27 +110,28 @@
         return;
       }
 
+      showLoader();
+
       let fileToSend;
-
-      if (input.type !== 'image/png') {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const pngBlob = await (await fetch(canvas.toDataURL('image/png'))).blob();
-        fileToSend = new File([pngBlob], 'converted.png', { type: 'image/png' });
-      } else {
-        fileToSend = input;
-      }
-
-      const formData = new FormData();
-      formData.append('cover', fileToSend);
-      formData.append('message', message);
-      formData.append('password', password);
-
       try {
+        if (input.type !== 'image/png') {
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const pngBlob = await (await fetch(canvas.toDataURL('image/png'))).blob();
+          fileToSend = new File([pngBlob], 'converted.png', { type: 'image/png' });
+        } else {
+          fileToSend = input;
+        }
+
+        const formData = new FormData();
+        formData.append('cover', fileToSend);
+        formData.append('message', message);
+        formData.append('password', password);
+
         const res = await fetch(backendURL + '/encode', {
           method: 'POST',
           body: formData
@@ -113,6 +152,8 @@
       } catch (err) {
         alert("❌ Encoding failed");
         console.error(err);
+      } finally {
+        hideLoader();
       }
     }
 
@@ -124,6 +165,9 @@
         alert("Please select an image and enter password.");
         return;
       }
+
+      showLoader();
+      document.getElementById('decodedMessage').innerText = "";
 
       const formData = new FormData();
       formData.append('stego', input);
@@ -144,6 +188,8 @@
       } catch (err) {
         document.getElementById('decodedMessage').innerText = "❌ Decoding failed";
         console.error(err);
+      } finally {
+        hideLoader();
       }
     }
   </script>
