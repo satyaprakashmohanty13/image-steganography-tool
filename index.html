@@ -1,27 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Image Steganography</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      margin-bottom: 1em;
+      color: #333;
+    }
+
+    section {
+      background: #fff;
+      padding: 1.5em;
+      margin: 2em auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+    }
+
+    textarea {
+      width: 90%;
+      height: 100px;
+      margin-top: 1em;
+    }
+
+    input[type="file"], button {
+      margin-top: 1em;
+    }
+
+    img {
+      max-width: 100%;
+      margin-top: 1em;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    #loader {
+      font-size: 1.1em;
+      margin-top: 1em;
+      color: #007bff;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #download-link {
+      display: inline-block;
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    #download-link:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
-  <h1>Image Steganography</h1>
+  <h1>🕵️‍♂️ Image Steganography</h1>
+
+  <div id="loader" class="hidden">🔄 Processing image, please wait...</div>
 
   <section>
-    <h2>Encode</h2>
+    <h2>🔐 Encode a Message</h2>
     <input type="file" id="encode-image" accept="image/*"><br>
-    <textarea id="encode-message" placeholder="Enter secret message..."></textarea><br>
+    <textarea id="encode-message" placeholder="Enter your secret message..."></textarea><br>
     <button onclick="encode()">Encode</button><br>
-    <img id="encoded-result" />
+    <img id="encoded-result" /><br>
+    <a id="download-link" href="#" download="encoded.png" style="display: none;">⬇️ Download Encoded Image</a>
   </section>
 
   <section>
-    <h2>Decode</h2>
+    <h2>🔍 Decode a Message</h2>
     <input type="file" id="decode-image" accept="image/*"><br>
     <button onclick="decode()">Decode</button><br>
     <p id="decoded-message"></p>
   </section>
 
-  <script src="script.js"></script>
+  <script>
+    const backendURL = "https://image-backend-vaxv.onrender.com"; // <-- Replace with your Render backend URL
+
+    async function encode() {
+      const image = document.getElementById('encode-image').files[0];
+      const message = document.getElementById('encode-message').value;
+      const loader = document.getElementById('loader');
+      const resultImg = document.getElementById('encoded-result');
+      const downloadLink = document.getElementById('download-link');
+
+      if (!image || !message) {
+        alert("Please select an image and enter a message.");
+        return;
+      }
+
+      loader.classList.remove('hidden');
+      resultImg.src = '';
+      downloadLink.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append("image", image);
+      formData.append("message", message);
+
+      try {
+        const res = await fetch(`${backendURL}/encode`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const blob = await res.blob();
+        const imgUrl = URL.createObjectURL(blob);
+
+        resultImg.src = imgUrl;
+        downloadLink.href = imgUrl;
+        downloadLink.style.display = 'inline-block';
+      } catch (err) {
+        alert("Encoding failed.");
+        console.error(err);
+      } finally {
+        loader.classList.add('hidden');
+      }
+    }
+
+    async function decode() {
+      const image = document.getElementById('decode-image').files[0];
+      const loader = document.getElementById('loader');
+      const messageOutput = document.getElementById('decoded-message');
+
+      if (!image) {
+        alert("Please select an image to decode.");
+        return;
+      }
+
+      loader.classList.remove('hidden');
+      messageOutput.innerText = '';
+
+      const formData = new FormData();
+      formData.append("image", image);
+
+      try {
+        const res = await fetch(`${backendURL}/decode`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        messageOutput.innerText = data.message || "⚠️ No message found.";
+      } catch (err) {
+        alert("Decoding failed.");
+        console.error(err);
+      } finally {
+        loader.classList.add('hidden');
+      }
+    }
+  </script>
 </body>
 </html>
