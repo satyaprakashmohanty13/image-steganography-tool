@@ -2,166 +2,179 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Image Steganography</title>
+  <title>Steganography with Encryption</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 2em;
-      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
     }
-
-    h1 {
-      margin-bottom: 1em;
-      color: #333;
-    }
-
-    section {
-      background: #fff;
-      padding: 1.5em;
-      margin: 2em auto;
+    .container {
+      background: white;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+      padding: 2rem;
+      text-align: center;
     }
-
-    textarea {
-      width: 90%;
-      height: 100px;
-      margin-top: 1em;
+    h1, h2 {
+      color: #2c3e50;
     }
-
-    input[type="file"], button {
-      margin-top: 1em;
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
     }
-
-    img {
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    #previewCanvas {
       max-width: 100%;
-      margin-top: 1em;
-      border-radius: 10px;
+      margin-top: 1rem;
       border: 1px solid #ccc;
     }
-
-    #loader {
-      font-size: 1.1em;
-      margin-top: 1em;
-      color: #007bff;
+    #decodedMessage {
+      background: #ecf0f1;
+      padding: 1rem;
+      border-radius: 8px;
+      word-break: break-word;
+      margin-top: 1rem;
     }
-
     .hidden {
       display: none;
-    }
-
-    #download-link {
-      display: inline-block;
-      margin-top: 1em;
-      padding: 0.5em 1em;
-      background-color: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-    }
-
-    #download-link:hover {
-      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h1>🕵️‍♂️ Image Steganography</h1>
+  <div class="container">
+    <h1>🔐 Image Steganography</h1>
 
-  <div id="loader" class="hidden">🔄 Processing image, please wait...</div>
+    <!-- Encode Section -->
+    <h2>Encode Message</h2>
+    <input type="file" id="coverImage" accept="image/*">
+    <textarea id="secretText" placeholder="Enter secret message..."></textarea>
+    <input type="password" id="password" placeholder="Encryption password">
+    <button id="encodeBtn">Encode & Download</button>
+    <div id="loading" class="hidden">Processing...</div>
 
-  <section>
-    <h2>🔐 Encode a Message</h2>
-    <input type="file" id="encode-image" accept="image/*"><br>
-    <textarea id="encode-message" placeholder="Enter your secret message..."></textarea><br>
-    <button onclick="encode()">Encode</button><br>
-    <img id="encoded-result" /><br>
-    <a id="download-link" href="#" download="encoded.png" style="display: none;">⬇️ Download Encoded Image</a>
-  </section>
+    <canvas id="previewCanvas" class="hidden"></canvas>
+    <a id="downloadLink" class="hidden" download="stego.png">Download Encoded Image</a>
 
-  <section>
-    <h2>🔍 Decode a Message</h2>
-    <input type="file" id="decode-image" accept="image/*"><br>
-    <button onclick="decode()">Decode</button><br>
-    <p id="decoded-message"></p>
-  </section>
+    <hr style="margin: 2rem 0;">
+
+    <!-- Decode Section -->
+    <h2>Decode Message</h2>
+    <input type="file" id="stegoImage" accept="image/*">
+    <input type="password" id="decodePassword" placeholder="Decryption password">
+    <button id="decodeBtn">Decode</button>
+    <div id="decodedMessage"></div>
+  </div>
 
   <script>
-    const backendURL = "https://image-backend-vaxv.onrender.com"; // <-- Replace with your Render backend URL
+    const renderBackend = 'https://<YOUR-RENDER-URL>'; // Replace this with your backend URL
 
-    async function encode() {
-      const image = document.getElementById('encode-image').files[0];
-      const message = document.getElementById('encode-message').value;
-      const loader = document.getElementById('loader');
-      const resultImg = document.getElementById('encoded-result');
-      const downloadLink = document.getElementById('download-link');
+    const coverImage = document.getElementById('coverImage');
+    const secretText = document.getElementById('secretText');
+    const password = document.getElementById('password');
+    const encodeBtn = document.getElementById('encodeBtn');
+    const loading = document.getElementById('loading');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const downloadLink = document.getElementById('downloadLink');
 
-      if (!image || !message) {
-        alert("Please select an image and enter a message.");
+    const stegoImage = document.getElementById('stegoImage');
+    const decodePassword = document.getElementById('decodePassword');
+    const decodeBtn = document.getElementById('decodeBtn');
+    const decodedMessage = document.getElementById('decodedMessage');
+
+    encodeBtn.addEventListener('click', async () => {
+      if (!coverImage.files[0] || !secretText.value || !password.value) {
+        alert('Please select image, enter message, and password.');
         return;
       }
 
-      loader.classList.remove('hidden');
-      resultImg.src = '';
-      downloadLink.style.display = 'none';
+      encodeBtn.disabled = true;
+      loading.classList.remove('hidden');
 
       const formData = new FormData();
-      formData.append("image", image);
-      formData.append("message", message);
+      formData.append('cover', coverImage.files[0]);
+      formData.append('message', secretText.value);
+      formData.append('password', password.value);
 
       try {
-        const res = await fetch(`${backendURL}/encode`, {
+        const response = await fetch(`${renderBackend}/encode`, {
           method: 'POST',
           body: formData
         });
 
-        const blob = await res.blob();
-        const imgUrl = URL.createObjectURL(blob);
+        if (!response.ok) throw new Error('Encoding failed');
 
-        resultImg.src = imgUrl;
-        downloadLink.href = imgUrl;
-        downloadLink.style.display = 'inline-block';
+        const blob = await response.blob();
+        const img = new Image();
+        img.onload = () => {
+          previewCanvas.width = img.width;
+          previewCanvas.height = img.height;
+          const ctx = previewCanvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          previewCanvas.classList.remove('hidden');
+          downloadLink.href = URL.createObjectURL(blob);
+          downloadLink.classList.remove('hidden');
+          loading.classList.add('hidden');
+          encodeBtn.disabled = false;
+        };
+        img.src = URL.createObjectURL(blob);
       } catch (err) {
-        alert("Encoding failed.");
-        console.error(err);
-      } finally {
-        loader.classList.add('hidden');
+        alert(err.message);
+        loading.classList.add('hidden');
+        encodeBtn.disabled = false;
       }
-    }
+    });
 
-    async function decode() {
-      const image = document.getElementById('decode-image').files[0];
-      const loader = document.getElementById('loader');
-      const messageOutput = document.getElementById('decoded-message');
-
-      if (!image) {
-        alert("Please select an image to decode.");
+    decodeBtn.addEventListener('click', async () => {
+      if (!stegoImage.files[0] || !decodePassword.value) {
+        alert('Please select stego image and enter password.');
         return;
       }
 
-      loader.classList.remove('hidden');
-      messageOutput.innerText = '';
+      decodeBtn.disabled = true;
+      decodedMessage.textContent = '🔍 Decoding...';
 
       const formData = new FormData();
-      formData.append("image", image);
+      formData.append('stego', stegoImage.files[0]);
+      formData.append('password', decodePassword.value);
 
       try {
-        const res = await fetch(`${backendURL}/decode`, {
+        const response = await fetch(`${renderBackend}/decode`, {
           method: 'POST',
           body: formData
         });
 
-        const data = await res.json();
-        messageOutput.innerText = data.message || "⚠️ No message found.";
+        const data = await response.json();
+
+        if (response.ok) {
+          decodedMessage.textContent = '🗝️ Secret Message: ' + data.message;
+        } else {
+          throw new Error(data.error || 'Decoding failed');
+        }
       } catch (err) {
-        alert("Decoding failed.");
-        console.error(err);
+        decodedMessage.textContent = '❌ ' + err.message;
       } finally {
-        loader.classList.add('hidden');
+        decodeBtn.disabled = false;
       }
-    }
+    });
   </script>
 </body>
 </html>
