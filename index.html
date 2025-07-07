@@ -1,197 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Image Steganography</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 2em;
-      background: #f8f9fa;
-    }
-    input, button, textarea {
-      padding: 0.5em;
-      margin: 0.5em;
-      width: 80%;
-      max-width: 400px;
-    }
-    #outputImage {
-      margin-top: 1em;
-      max-width: 100%;
-    }
-    .hidden {
-      display: none;
-    }
-
-    /* Loader styles */
-    #loader {
-      display: none;
-      margin: 1em auto;
-      text-align: center;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 5px solid #ccc;
-      border-top: 5px solid #007bff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .loading-text {
-      margin-top: 0.5em;
-      font-weight: bold;
-      color: #555;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Steganography Tool</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo 600 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Indigo 700 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* Gray 500 */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* Gray 700 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+        }
+        input[type="file"] {
+            border: 2px dashed #d1d5db;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="file"]:hover {
+            border-color: #9ca3af;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            background-color: #fef2f2; /* Red 50 */
+            color: #ef4444; /* Red 500 */
+            border: 1px solid #fca5a5; /* Red 300 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .success-box {
+            background-color: #ecfdf5; /* Green 50 */
+            color: #10b981; /* Green 500 */
+            border: 1px solid #a7f3d0; /* Green 300 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
-<body>
-  <h1>🔐 Image Steganography</h1>
+<body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+    <div class="container mx-auto p-4 sm:p-8 card">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8">Video Steganography Tool</h1>
 
-  <input type="file" id="imageInput" accept="image/*" /><br/>
-  <textarea id="message" placeholder="Secret message"></textarea><br/>
-  <input type="password" id="password" placeholder="Password"/><br/>
-  <button onclick="encodeImage()">Encode & Hide</button>
-  <hr/>
-  <input type="file" id="decodeInput" accept="image/png" /><br/>
-  <input type="password" id="decodePassword" placeholder="Password"/><br/>
-  <button onclick="decodeImage()">Decode Message</button>
+        <!-- Backend URL Configuration -->
+        <div class="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+            <p class="font-semibold mb-2">Important: Configure Backend URL</p>
+            <p>Before using, please replace <code class="bg-yellow-100 px-1 py-0.5 rounded">YOUR_RENDER_BACKEND_URL</code> in the JavaScript section of this file with the actual URL of your deployed Render backend.</p>
+            <p class="mt-2">Example: <code class="bg-yellow-100 px-1 py-0.5 rounded">https://my-stego-app.onrender.com</code></p>
+        </div>
 
-  <div id="loader">
-    <div class="spinner"></div>
-    <div class="loading-text">Processing...</div>
-  </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Encode Section -->
+            <div class="p-6 card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Encode Message into Video</h2>
+                <div class="mb-4">
+                    <label for="encodeVideoInput" class="block text-gray-700 text-sm font-bold mb-2">Select Video File:</label>
+                    <input type="file" id="encodeVideoInput" accept="video/mp4" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                </div>
+                <div class="mb-4">
+                    <label for="messageInput" class="block text-gray-700 text-sm font-bold mb-2">Secret Message:</label>
+                    <textarea id="messageInput" rows="4" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-indigo-500" placeholder="Enter your secret message here..."></textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="encodePassphraseInput" class="block text-gray-700 text-sm font-bold mb-2">Passphrase:</label>
+                    <input type="password" id="encodePassphraseInput" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:border-indigo-500" placeholder="Enter a strong passphrase">
+                </div>
+                <button id="encodeButton" class="btn btn-primary w-full flex items-center justify-center">
+                    <span id="encodeButtonText">Encode Video</span>
+                    <span id="encodeLoadingSpinner" class="loading-spinner hidden"></span>
+                </button>
+                <div id="encodeResult" class="mt-4"></div>
+            </div>
 
-  <h3>🔽 Encoded Image</h3>
-  <a id="downloadLink" class="hidden" download="stego.png">Download Image</a><br/>
-  <img id="outputImage" class="hidden"/>
+            <!-- Decode Section -->
+            <div class="p-6 card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Decode Message from Video</h2>
+                <div class="mb-4">
+                    <label for="decodeVideoInput" class="block text-gray-700 text-sm font-bold mb-2">Select Stego Video File:</label>
+                    <input type="file" id="decodeVideoInput" accept="video/mp4" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                </div>
+                <div class="mb-6">
+                    <label for="decodePassphraseInput" class="block text-gray-700 text-sm font-bold mb-2">Passphrase:</label>
+                    <input type="password" id="decodePassphraseInput" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:border-indigo-500" placeholder="Enter the passphrase">
+                </div>
+                <button id="decodeButton" class="btn btn-secondary w-full flex items-center justify-center">
+                    <span id="decodeButtonText">Decode Video</span>
+                    <span id="decodeLoadingSpinner" class="loading-spinner hidden"></span>
+                </button>
+                <div id="decodeResult" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
 
-  <h3>📩 Decoded Message</h3>
-  <p id="decodedMessage"></p>
+    <script>
+        // IMPORTANT: Replace with your actual Render backend URL
+        const BACKEND_URL = "YOUR_RENDER_BACKEND_URL"; // e.g., "https://my-stego-app.onrender.com"
 
-  <script>
-    const backendURL = 'https://your-backend-url.onrender.com'; // 🔁 Replace with your real backend
+        // --- DOM Elements ---
+        const encodeVideoInput = document.getElementById('encodeVideoInput');
+        const messageInput = document.getElementById('messageInput');
+        const encodePassphraseInput = document.getElementById('encodePassphraseInput');
+        const encodeButton = document.getElementById('encodeButton');
+        const encodeButtonText = document.getElementById('encodeButtonText');
+        const encodeLoadingSpinner = document.getElementById('encodeLoadingSpinner');
+        const encodeResult = document.getElementById('encodeResult');
 
-    const loader = document.getElementById('loader');
-    function showLoader() { loader.style.display = 'block'; }
-    function hideLoader() { loader.style.display = 'none'; }
+        const decodeVideoInput = document.getElementById('decodeVideoInput');
+        const decodePassphraseInput = document.getElementById('decodePassphraseInput');
+        const decodeButton = document.getElementById('decodeButton');
+        const decodeButtonText = document.getElementById('decodeButtonText');
+        const decodeLoadingSpinner = document.getElementById('decodeLoadingSpinner');
+        const decodeResult = document.getElementById('decodeResult');
 
-    async function encodeImage() {
-      const input = document.getElementById('imageInput').files[0];
-      const message = document.getElementById('message').value;
-      const password = document.getElementById('password').value;
-
-      if (!input || !message || !password) {
-        alert("Please fill all fields.");
-        return;
-      }
-
-      const img = new Image();
-      img.src = URL.createObjectURL(input);
-      await new Promise(res => img.onload = res);
-
-      const width = img.width;
-      const height = img.height;
-
-      const maxChars = Math.floor((width * height * 3 - 32) / 8);
-
-      if (message.length > maxChars) {
-        alert(`❗ Your message is too long for this image.\nMax: ${maxChars} characters\nCurrent: ${message.length}`);
-        return;
-      }
-
-      showLoader();
-
-      let fileToSend;
-      try {
-        if (input.type !== 'image/png') {
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-
-          const pngBlob = await (await fetch(canvas.toDataURL('image/png'))).blob();
-          fileToSend = new File([pngBlob], 'converted.png', { type: 'image/png' });
-        } else {
-          fileToSend = input;
+        // --- Helper Functions for UI ---
+        function showLoading(buttonTextElement, spinnerElement) {
+            buttonTextElement.textContent = 'Processing...';
+            spinnerElement.classList.remove('hidden');
+            buttonTextElement.parentElement.disabled = true;
         }
 
-        const formData = new FormData();
-        formData.append('cover', fileToSend);
-        formData.append('message', message);
-        formData.append('password', password);
-
-        const res = await fetch(backendURL + '/encode', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!res.ok) throw new Error("Encoding failed");
-
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const img = document.getElementById('outputImage');
-        const link = document.getElementById('downloadLink');
-
-        img.src = url;
-        img.classList.remove('hidden');
-        link.href = url;
-        link.classList.remove('hidden');
-        link.innerText = "Download Stego Image";
-      } catch (err) {
-        alert("❌ Encoding failed");
-        console.error(err);
-      } finally {
-        hideLoader();
-      }
-    }
-
-    async function decodeImage() {
-      const input = document.getElementById('decodeInput').files[0];
-      const password = document.getElementById('decodePassword').value;
-
-      if (!input || !password) {
-        alert("Please select an image and enter password.");
-        return;
-      }
-
-      showLoader();
-      document.getElementById('decodedMessage').innerText = "";
-
-      const formData = new FormData();
-      formData.append('stego', input);
-      formData.append('password', password);
-
-      try {
-        const res = await fetch(backendURL + '/decode', {
-          method: 'POST',
-          body: formData
-        });
-
-        const json = await res.json();
-        if (json.message) {
-          document.getElementById('decodedMessage').innerText = json.message;
-        } else {
-          throw new Error("Decoding error");
+        function hideLoading(buttonTextElement, spinnerElement, originalText) {
+            buttonTextElement.textContent = originalText;
+            spinnerElement.classList.add('hidden');
+            buttonTextElement.parentElement.disabled = false;
         }
-      } catch (err) {
-        document.getElementById('decodedMessage').innerText = "❌ Decoding failed";
-        console.error(err);
-      } finally {
-        hideLoader();
-      }
-    }
-  </script>
+
+        function displayMessage(element, type, message) {
+            element.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'message-box' : 'success-box';
+            div.textContent = message;
+            element.appendChild(div);
+        }
+
+        // --- Encode Logic ---
+        encodeButton.addEventListener('click', async () => {
+            const videoFile = encodeVideoInput.files[0];
+            const message = messageInput.value;
+            const passphrase = encodePassphraseInput.value;
+
+            if (!videoFile || !message || !passphrase) {
+                displayMessage(encodeResult, 'error', 'Please fill in all fields and select a video.');
+                return;
+            }
+            if (BACKEND_URL === "YOUR_RENDER_BACKEND_URL") {
+                displayMessage(encodeResult, 'error', 'Please configure the BACKEND_URL in the JavaScript code.');
+                return;
+            }
+
+            showLoading(encodeButtonText, encodeLoadingSpinner);
+            encodeResult.innerHTML = ''; // Clear previous results
+
+            const formData = new FormData();
+            formData.append('video', videoFile);
+            formData.append('message', message);
+            formData.append('passphrase', passphrase);
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/encode`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `stego_${videoFile.name}`;
+                    a.className = 'block mt-4 text-center text-blue-600 hover:underline';
+                    a.textContent = 'Download Stego Video';
+                    encodeResult.innerHTML = ''; // Clear previous messages
+                    encodeResult.appendChild(a);
+                    displayMessage(encodeResult, 'success', 'Video encoded successfully!');
+                } else {
+                    const errorData = await response.json();
+                    displayMessage(encodeResult, 'error', `Encoding failed: ${errorData.error || response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                displayMessage(encodeResult, 'error', `An error occurred: ${error.message}. Please check your backend URL and network connection.`);
+            } finally {
+                hideLoading(encodeButtonText, encodeLoadingSpinner, 'Encode Video');
+            }
+        });
+
+        // --- Decode Logic ---
+        decodeButton.addEventListener('click', async () => {
+            const videoFile = decodeVideoInput.files[0];
+            const passphrase = decodePassphraseInput.value;
+
+            if (!videoFile || !passphrase) {
+                displayMessage(decodeResult, 'error', 'Please select a video and enter the passphrase.');
+                return;
+            }
+            if (BACKEND_URL === "YOUR_RENDER_BACKEND_URL") {
+                displayMessage(decodeResult, 'error', 'Please configure the BACKEND_URL in the JavaScript code.');
+                return;
+            }
+
+            showLoading(decodeButtonText, decodeLoadingSpinner);
+            decodeResult.innerHTML = ''; // Clear previous results
+
+            const formData = new FormData();
+            formData.append('video', videoFile);
+            formData.append('passphrase', passphrase);
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/decode`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const messageTextarea = document.createElement('textarea');
+                    messageTextarea.value = data.message;
+                    messageTextarea.rows = 8;
+                    messageTextarea.readOnly = true;
+                    messageTextarea.className = 'shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-4';
+                    decodeResult.innerHTML = ''; // Clear previous messages
+                    decodeResult.appendChild(messageTextarea);
+                    displayMessage(decodeResult, 'success', 'Message decoded successfully!');
+                } else {
+                    const errorData = await response.json();
+                    displayMessage(decodeResult, 'error', `Decoding failed: ${errorData.error || response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                displayMessage(decodeResult, 'error', `An error occurred: ${error.message}. Please check your backend URL and network connection.`);
+            } finally {
+                hideLoading(decodeButtonText, decodeLoadingSpinner, 'Decode Video');
+            }
+        });
+    </script>
 </body>
 </html>
