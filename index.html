@@ -161,8 +161,8 @@
     </div>
 
     <script>
-        // IMPORTANT: Replace with your Render backend URL after deployment
-        const BACKEND_URL = 'https://image-backend-9t8k.onrender.com'; // <<< REMEMBER TO UPDATE THIS AFTER DEPLOYMENT
+        // IMPORTANT: Replace with your Hugging Face Space URL (e.g., 'https://your-username-your-space-name.hf.space')
+        const BACKEND_URL = 'https://huggingface.co/spaces/satyaprakashmohanty13/Image-stegonography-backend'; // <<< REMEMBER TO UPDATE THIS AFTER DEPLOYMENT
 
         // --- DOM Elements ---
         const encodeImageInput = document.getElementById('encodeImage');
@@ -208,7 +208,7 @@
         decodeButton.addEventListener('click', handleDecode);
 
         // --- Helper Function to manage loading state ---
-        function setLoading(button, spinner, textSpan, isLoading) {
+        function setLoading(button, spinner, textSpan, isLoading, defaultText) {
             if (isLoading) {
                 button.disabled = true;
                 spinner.classList.remove('hidden');
@@ -216,11 +216,24 @@
             } else {
                 button.disabled = false;
                 spinner.classList.add('hidden');
-                textSpan.textContent = button.id === 'encodeButton' ? 'Encode Message' : 'Decode Message';
+                textSpan.textContent = defaultText;
             }
         }
 
-        // --- Encode Function ---
+        // --- Helper function to convert File to Base64 (for Gradio image input) ---
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Gradio expects data URL for image input
+                    resolve(reader.result);
+                };
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- Encode Function (Updated for Gradio) ---
         async function handleEncode() {
             const imageFile = encodeImageInput.files[0];
             const message = encodeMessageInput.value;
@@ -231,75 +244,105 @@
                 return;
             }
 
-            setLoading(encodeButton, encodeSpinner, encodeButtonText, true);
+            setLoading(encodeButton, encodeSpinner, encodeButtonText, true, 'Encode Message');
             encodeErrorDisplay.textContent = '';
             encodedImageContainer.classList.add('hidden');
 
-            const formData = new FormData();
-            formData.append('image', imageFile);
-            formData.append('message', message);
-            formData.append('key', key);
-
             try {
-                const response = await fetch(`${BACKEND_URL}/encode`, {
+                const imageBase64DataUrl = await fileToBase64(imageFile);
+
+                const payload = {
+                    fn_index: 0, // Index of encode_image_and_message function in Gradio interface
+                    data: [
+                        imageBase64DataUrl, // Gradio expects data URL for image
+                        message,
+                        key
+                    ]
+                };
+
+                const response = await fetch(`${BACKEND_URL}/run/predict`, {
                     method: 'POST',
-                    body: formData,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to encode image.');
+                    // Gradio error messages are often in result.error
+                    throw new Error(errorData.error || (errorData.detail && errorData.detail[0] && errorData.detail[0].msg) || 'Failed to encode image.');
                 }
 
-                const data = await response.json();
-                encodedImageDisplay.src = `data:image/png;base64,${data.encoded_image}`;
-                downloadEncodedImageLink.href = `data:image/png;base64,${data.encoded_image}`;
-                encodedImageContainer.classList.remove('hidden');
+                const result = await response.json();
+                if (result.data && result.data.length > 0 && result.data[0]) {
+                    // Gradio returns a data URL for images
+                    encodedImageDisplay.src = result.data[0];
+                    downloadEncodedImageLink.href = result.data[0];
+                    encodedImageContainer.classList.remove('hidden');
+                } else {
+                    throw new Error('No encoded image received from backend.');
+                }
+
             } catch (error) {
                 console.error('Error encoding image:', error);
                 encodeErrorDisplay.textContent = `Error: ${error.message}`;
             } finally {
-                setLoading(encodeButton, encodeSpinner, encodeButtonText, false);
+                setLoading(encodeButton, encodeSpinner, encodeButtonText, false, 'Encode Message');
             }
         }
 
-        // --- Decode Function ---
+        // --- Decode Function (Updated for Gradio) ---
         async function handleDecode() {
             const imageFile = decodeImageInput.files[0];
             const key = decodeKeyInput.value;
 
             if (!imageFile || !key) {
-                decodeErrorDisplay.textContent = 'Please provide an image and the encryption key.';
+                decodeErrorDisplay.textContent = 'Please provide a steganographic image and the encryption key.';
                 return;
             }
 
-            setLoading(decodeButton, decodeSpinner, decodeButtonText, true);
+            setLoading(decodeButton, decodeSpinner, decodeButtonText, true, 'Decode Message');
             decodeErrorDisplay.textContent = '';
             decodedMessageContainer.classList.add('hidden');
 
-            const formData = new FormData();
-            formData.append('image', imageFile);
-            formData.append('key', key);
-
             try {
-                const response = await fetch(`${BACKEND_URL}/decode`, {
+                const imageBase64DataUrl = await fileToBase64(imageFile);
+
+                const payload = {
+                    fn_index: 1, // Index of decode_image_and_message function in Gradio interface
+                    data: [
+                        imageBase64DataUrl,
+                        key
+                    ]
+                };
+
+                const response = await fetch(`${BACKEND_URL}/run/predict`, {
                     method: 'POST',
-                    body: formData,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to decode image.');
+                    throw new Error(errorData.error || (errorData.detail && errorData.detail[0] && errorData.detail[0].msg) || 'Failed to decode image.');
                 }
 
-                const data = await response.json();
-                decodedMessageDisplay.textContent = data.decoded_message;
-                decodedMessageContainer.classList.remove('hidden');
+                const result = await response.json();
+                if (result.data && result.data.length > 0 && result.data[0] !== undefined) {
+                    decodedMessageDisplay.textContent = result.data[0];
+                    decodedMessageContainer.classList.remove('hidden');
+                } else {
+                    throw new Error('No decoded message received from backend.');
+                }
+
             } catch (error) {
                 console.error('Error decoding image:', error);
                 decodeErrorDisplay.textContent = `Error: ${error.message}`;
             } finally {
-                setLoading(decodeButton, decodeSpinner, decodeButtonText, false);
+                setLoading(decodeButton, decodeSpinner, decodeButtonText, false, 'Decode Message');
             }
         }
     </script>
