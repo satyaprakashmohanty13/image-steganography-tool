@@ -89,6 +89,26 @@
             margin-top: 1rem;
             font-size: 0.9rem;
         }
+        /* Style for the download link as a button */
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            background-color: #10b981; /* Green 500 */
+            color: white;
+            text-decoration: none; /* Remove underline for link */
+            margin-top: 1rem; /* Space from message */
+        }
+        .download-btn:hover {
+            background-color: #059669; /* Green 600 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
     </style>
 </head>
 <body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
@@ -179,7 +199,7 @@
         }
 
         function displayMessage(element, type, message) {
-            element.innerHTML = '';
+            element.innerHTML = ''; // Clear previous messages
             const div = document.createElement('div');
             div.className = type === 'error' ? 'message-box' : 'success-box';
             div.textContent = message;
@@ -218,14 +238,18 @@
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
+
+                    // Create the download button/link
                     const a = document.createElement('a');
                     a.href = url;
+                    // Suggest a filename, e.g., "stego_originalvideoname.mp4"
                     a.download = `stego_${videoFile.name}`;
-                    a.className = 'block mt-4 text-center text-blue-600 hover:underline';
+                    a.className = 'download-btn'; // Use custom CSS class for styling
                     a.textContent = 'Download Stego Video';
+
                     encodeResult.innerHTML = ''; // Clear previous messages
-                    encodeResult.appendChild(a);
                     displayMessage(encodeResult, 'success', 'Video encoded successfully!');
+                    encodeResult.appendChild(a); // Append the download button
                 } else {
                     const errorData = await response.json();
                     displayMessage(encodeResult, 'error', `Encoding failed: ${errorData.error || response.statusText}`);
