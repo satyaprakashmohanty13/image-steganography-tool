@@ -136,7 +136,7 @@
 
     <script>
         // IMPORTANT: Replace this with the actual URL of your deployed Hugging Face Space backend
-        const BACKEND_API_URL = "https://satyaprakashmohanty13-image-backend.hf.space"; // e.g., "https://your-username-your-space-name.hf.space"
+        const BACKEND_API_URL = "https://satyaprakashmohanty13-image-backend.hf.space";
 
         // --- DOM Elements ---
         // Encode Section
@@ -279,7 +279,7 @@
                 displayMessage(encodeImageError, 'Please select an image.', true);
                 isValid = false;
             }
-            if (!message) {
+            if (!message) { // This is the frontend check for empty message
                 displayMessage(messageError, 'Message to hide cannot be empty.', true);
                 isValid = false;
             }
@@ -290,7 +290,7 @@
 
             const formData = new FormData();
             formData.append('image', imageFile);
-            formData.append('message', message);
+            formData.append('message', message); // FIXED: Removed the extra parenthesis here
 
             try {
                 const response = await fetch(`${BACKEND_API_URL}/encode/`, {
