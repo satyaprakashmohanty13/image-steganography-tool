@@ -28,6 +28,20 @@
         textarea::-webkit-scrollbar-thumb:hover {
             background: #64748b; /* bg-gray-500 */
         }
+       .warning-box {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        }
+       .warning-box::before {
+       content: "⚠️ ";
+       font-size: 1.2em;
+        margin-right: 5px;
+       }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -149,6 +163,9 @@
                 </button>
             </div>
             <p id="decodeErrorMessage" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+        </div>
+        <div class="warning-box">
+  The image must be the original file which was downloaded from here.
         </div>
     </div>
 
