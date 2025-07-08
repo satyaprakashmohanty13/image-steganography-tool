@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://<YOUR-HF-USERNAME>-<SPACE-NAME>.hf.space';
+const BACKEND_URL = 'https://satyaprakashmohanty13--image-backend.hf.space';
 
 document.getElementById('encode-btn').onclick = async () => {
   const fileInput = document.getElementById('encode-file');
