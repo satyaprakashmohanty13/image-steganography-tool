@@ -60,13 +60,14 @@
                 <p id="messageError" class="text-red-500 text-sm mt-2 hidden"></p>
             </div>
 
-            <!-- Temporary Debug Display -->
-            <div id="debugMessageDisplay" class="hidden bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg relative text-sm">
-                <p class="font-bold">Debug Info (Temporary):</p>
-                <p>Message being sent: <span id="debugMessageContent" class="font-mono"></span></p>
-                <p>Length: <span id="debugMessageLength" class="font-mono"></span></p>
+            <!-- Password Input for Encoding -->
+            <div>
+                <label for="encodePasswordInput" class="block text-sm font-medium text-gray-700 mb-2">Encryption Password</label>
+                <input type="password" id="encodePasswordInput" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
+                    focus:border-blue-500 focus:ring-blue-500 p-3"
+                    placeholder="Enter a strong password for encryption">
+                <p id="encodePasswordError" class="text-red-500 text-sm mt-2 hidden"></p>
             </div>
-
 
             <!-- Encode Button -->
             <button id="encodeButton" class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700
@@ -115,6 +116,15 @@
                 <p id="decodeImageError" class="text-red-500 text-sm mt-2 hidden"></p>
             </div>
 
+            <!-- Password Input for Decoding -->
+            <div>
+                <label for="decodePasswordInput" class="block text-sm font-medium text-gray-700 mb-2">Decryption Password</label>
+                <input type="password" id="decodePasswordInput" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
+                    focus:border-purple-500 focus:ring-purple-500 p-3"
+                    placeholder="Enter the password used for encryption">
+                <p id="decodePasswordError" class="text-red-500 text-sm mt-2 hidden"></p>
+            </div>
+
             <!-- Decode Button -->
             <button id="decodeButton" class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-purple-600 hover:bg-purple-700
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out">
@@ -141,7 +151,7 @@
             <p id="decodeErrorMessage" class="text-red-500 text-sm text-center mt-4 hidden"></p>
         </div>
     </div>
-    
+
     <script>
         // IMPORTANT: Replace this with the actual URL of your deployed Hugging Face Space backend
         const BACKEND_API_URL = "https://satyaprakashmohanty13-image-backend.hf.space";
@@ -154,6 +164,8 @@
         const encodeImageError = document.getElementById('encodeImageError');
         const messageInput = document.getElementById('messageInput');
         const messageError = document.getElementById('messageError');
+        const encodePasswordInput = document.getElementById('encodePasswordInput'); // New
+        const encodePasswordError = document.getElementById('encodePasswordError'); // New
         const encodeButton = document.getElementById('encodeButton');
         const encodeButtonText = document.getElementById('encodeButtonText');
         const encodeSpinner = document.getElementById('encodeSpinner');
@@ -162,17 +174,13 @@
         const downloadEncodedImage = document.getElementById('downloadEncodedImage');
         const encodeErrorMessage = document.getElementById('encodeErrorMessage');
 
-        // Debug elements
-        const debugMessageDisplay = document.getElementById('debugMessageDisplay');
-        const debugMessageContent = document.getElementById('debugMessageContent');
-        const debugMessageLength = document.getElementById('debugMessageLength');
-
-
         // Decode Section
         const decodeImageInput = document.getElementById('decodeImageInput');
         const decodeImagePreviewContainer = document.getElementById('decodeImagePreviewContainer');
         const decodeImagePreview = document.getElementById('decodeImagePreview');
         const decodeImageError = document.getElementById('decodeImageError');
+        const decodePasswordInput = document.getElementById('decodePasswordInput'); // New
+        const decodePasswordError = document.getElementById('decodePasswordError'); // New
         const decodeButton = document.getElementById('decodeButton');
         const decodeButtonText = document.getElementById('decodeButtonText');
         const decodeSpinner = document.getElementById('decodeSpinner');
@@ -266,7 +274,8 @@
             encodeImageError.classList.add('hidden');
             decodeImageError.classList.add('hidden');
             messageError.classList.add('hidden');
-            debugMessageDisplay.classList.add('hidden'); // Hide debug info
+            encodePasswordError.classList.add('hidden'); // New
+            decodePasswordError.classList.add('hidden'); // New
         }
 
         // --- Event Listeners ---
@@ -288,20 +297,19 @@
             clearResults();
             const imageFile = encodeImageInput.files[0];
             const message = messageInput.value.trim();
-
-            // --- DEBUG DISPLAY ---
-            debugMessageContent.textContent = `'${message}'`;
-            debugMessageLength.textContent = message.length;
-            debugMessageDisplay.classList.remove('hidden');
-            // --- END DEBUG DISPLAY ---
+            const password = encodePasswordInput.value; // Get password
 
             let isValid = true;
             if (!imageFile) {
                 displayMessage(encodeImageError, 'Please select an image.', true);
                 isValid = false;
             }
-            if (!message) { // This is the frontend check for empty message
+            if (!message) {
                 displayMessage(messageError, 'Message to hide cannot be empty.', true);
+                isValid = false;
+            }
+            if (!password) { // Validate password
+                displayMessage(encodePasswordError, 'Encryption password cannot be empty.', true);
                 isValid = false;
             }
 
@@ -312,6 +320,7 @@
             const formData = new FormData();
             formData.append('image', imageFile);
             formData.append('message', message);
+            formData.append('password', password); // Append password to FormData
 
             try {
                 const response = await fetch(`${BACKEND_API_URL}/encode/`, {
@@ -325,7 +334,7 @@
                     encodedImageDisplay.src = imageUrl;
                     downloadEncodedImage.href = imageUrl;
                     encodedResultContainer.classList.remove('hidden');
-                    displayMessage(encodeErrorMessage, 'Image encoded successfully! Download below.', false);
+                    displayMessage(encodeErrorMessage, 'Message encoded successfully! Download below.', false);
                 } else {
                     const errorData = await response.json();
                     displayMessage(encodeErrorMessage, `Error: ${errorData.detail || 'Failed to encode image.'}`, true);
@@ -335,8 +344,6 @@
                 displayMessage(encodeErrorMessage, `Network error or server unreachable: ${error.message}`, true);
             } finally {
                 setLoadingState(encodeButton, encodeButtonText, encodeSpinner, false, 'Encode Image');
-                // Hide debug info after operation completes
-                debugMessageDisplay.classList.add('hidden');
             }
         });
 
@@ -344,16 +351,25 @@
         decodeButton.addEventListener('click', async () => {
             clearResults();
             const imageFile = decodeImageInput.files[0];
+            const password = decodePasswordInput.value; // Get password
 
+            let isValid = true;
             if (!imageFile) {
                 displayMessage(decodeImageError, 'Please select an image to decode.', true);
-                return;
+                isValid = false;
             }
+            if (!password) { // Validate password
+                displayMessage(decodePasswordError, 'Decryption password cannot be empty.', true);
+                isValid = false;
+            }
+
+            if (!isValid) return;
 
             setLoadingState(decodeButton, decodeButtonText, decodeSpinner, true, 'Decoding...');
 
             const formData = new FormData();
             formData.append('image', imageFile);
+            formData.append('password', password); // Append password to FormData
 
             try {
                 const response = await fetch(`${BACKEND_API_URL}/decode/`, {
