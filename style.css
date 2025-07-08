@@ -1,0 +1,19 @@
+body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px; }
+.container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+h1 { text-align: center; }
+section { margin-bottom: 20px; }
+textarea, input[type="password"] { width: 100%; margin-top: 8px; padding: 8px; }
+button { margin-top: 8px; padding: 10px 20px; }
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-top: 10px;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
