@@ -1,180 +1,387 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Image Steganography</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    section {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    input, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-
-    button {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    .loader {
-      display: none;
-      margin: 10px auto;
-      border: 6px solid #f3f3f3;
-      border-top: 6px solid #3498db;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    #download-link {
-      display: none;
-      text-align: center;
-      margin-top: 10px;
-      color: #2c3e50;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Steganography</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #e2e8f0; /* bg-gray-200 */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* bg-gray-400 */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* bg-gray-500 */
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col lg:flex-row gap-8">
+        <!-- Left Panel: Encode Section -->
+        <div class="flex-1 space-y-6">
+            <h2 class="text-3xl font-bold text-gray-800 text-center mb-6">Encode Message</h2>
 
-  <h1>🧠 Image Steganography</h1>
+            <!-- Image Upload for Encoding -->
+            <div>
+                <label for="encodeImageInput" class="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+                <input type="file" id="encodeImageInput" accept="image/*" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100 cursor-pointer rounded-lg border border-gray-300 p-2">
+                <div id="encodeImagePreviewContainer" class="mt-4 flex justify-center items-center h-48 bg-gray-100 rounded-lg border border-dashed border-gray-300 hidden">
+                    <img id="encodeImagePreview" class="max-h-full max-w-full object-contain rounded-lg" src="#" alt="Image Preview">
+                </div>
+                <p id="encodeImageError" class="text-red-500 text-sm mt-2 hidden"></p>
+            </div>
 
-  <section>
-    <h2>🔒 Encode Message</h2>
-    <input type="file" id="encode-file" accept="image/*" />
-    <textarea id="message" placeholder="Enter secret message"></textarea>
-    <input type="password" id="password" placeholder="Enter password" />
-    <button id="encode-btn">Encode</button>
-    <div id="loader-encode" class="loader"></div>
-    <a id="download-link" download="stego.png">Download Stego Image</a>
-  </section>
+            <!-- Message Input for Encoding -->
+            <div>
+                <label for="messageInput" class="block text-sm font-medium text-gray-700 mb-2">Message to Hide</label>
+                <textarea id="messageInput" rows="6" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
+                    focus:border-blue-500 focus:ring-blue-500 p-3 resize-y"
+                    placeholder="Enter the secret message here..."></textarea>
+                <p id="messageError" class="text-red-500 text-sm mt-2 hidden"></p>
+            </div>
 
-  <section>
-    <h2>🔓 Decode Message</h2>
-    <input type="file" id="decode-file" accept="image/*" />
-    <input type="password" id="decode-password" placeholder="Enter password" />
-    <button id="decode-btn">Decode</button>
-    <div id="loader-decode" class="loader"></div>
-    <p id="decoded-message" style="margin-top: 10px; font-weight: bold;"></p>
-  </section>
+            <!-- Encode Button -->
+            <button id="encodeButton" class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                <span id="encodeButtonText">Encode Image</span>
+                <svg id="encodeSpinner" class="animate-spin h-5 w-5 text-white ml-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
 
-  <script>
-    const BACKEND_URL = 'https://satyaprakashmohanty13--image-backend.hf.space';
+            <!-- Encoded Image Result -->
+            <div id="encodedResultContainer" class="hidden mt-6 bg-gray-50 p-4 rounded-lg shadow-inner text-center">
+                <p class="text-green-600 font-semibold mb-3">Message encoded successfully!</p>
+                <img id="encodedImageDisplay" class="max-h-64 max-w-full object-contain mx-auto rounded-lg border border-gray-200" src="#" alt="Encoded Image">
+                <a id="downloadEncodedImage" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out" download="encoded_image.png">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M.5 8.25a.75.75 0 01.75.75v1.5a.75.75 0 001.5 0V9a.75.75 0 011.5 0v.75a.75.75 0 001.5 0V9a.75.75 0 011.5 0v.75a.75.75 0 001.5 0V9a.75.75 0 011.5 0v.75a.75.75 0 001.5 0V9a.75.75 0 011.5 0v1.5a.75.75 0 01-1.5 0V9a.75.75 0 00-1.5 0v.75a.75.75 0 00-1.5 0V9a.75.75 0 00-1.5 0v.75a.75.75 0 00-1.5 0V9a.75.75 0 00-1.5 0v.75a.75.75 0 00-1.5 0V9a.75.75 0 00-1.5 0V8.25a.75.75 0 01.75-.75zM12 9.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V10.5a.75.75 0 01.75-.75zM15 9.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V10.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M10 1a.75.75 0 01.75.75v7.5a.75.75 0 01-1.5 0V1.75A.75.75 0 0110 1z" clip-rule="evenodd" />
+                    </svg>
+                    Download Encoded Image
+                </a>
+            </div>
+            <p id="encodeErrorMessage" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+        </div>
 
-    document.getElementById('encode-btn').onclick = async () => {
-      const fileInput = document.getElementById('encode-file');
-      const message = document.getElementById('message').value;
-      const password = document.getElementById('password').value;
-      const loader = document.getElementById('loader-encode');
-      const link = document.getElementById('download-link');
+        <!-- Separator for large screens -->
+        <div class="hidden lg:block w-px bg-gray-300"></div>
 
-      if (!fileInput.files.length || !message || !password) {
-        alert('Please fill all fields.');
-        return;
-      }
+        <!-- Right Panel: Decode Section -->
+        <div class="flex-1 space-y-6">
+            <h2 class="text-3xl font-bold text-gray-800 text-center mb-6">Decode Message</h2>
 
-      const form = new FormData();
-      form.append('file', fileInput.files[0]);
-      form.append('message', message);
-      form.append('password', password);
+            <!-- Image Upload for Decoding -->
+            <div>
+                <label for="decodeImageInput" class="block text-sm font-medium text-gray-700 mb-2">Upload Image to Decode</label>
+                <input type="file" id="decodeImageInput" accept="image/*" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100 cursor-pointer rounded-lg border border-gray-300 p-2">
+                <div id="decodeImagePreviewContainer" class="mt-4 flex justify-center items-center h-48 bg-gray-100 rounded-lg border border-dashed border-gray-300 hidden">
+                    <img id="decodeImagePreview" class="max-h-full max-w-full object-contain rounded-lg" src="#" alt="Image Preview">
+                </div>
+                <p id="decodeImageError" class="text-red-500 text-sm mt-2 hidden"></p>
+            </div>
 
-      loader.style.display = 'inline-block';
-      link.style.display = 'none';
+            <!-- Decode Button -->
+            <button id="decodeButton" class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-purple-600 hover:bg-purple-700
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out">
+                <span id="decodeButtonText">Decode Image</span>
+                <svg id="decodeSpinner" class="animate-spin h-5 w-5 text-white ml-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
 
-      try {
-        const res = await fetch(BACKEND_URL + '/encode', {
-          method: 'POST',
-          body: form,
-        });
+            <!-- Decoded Message Result -->
+            <div id="decodedResultContainer" class="hidden mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
+                <p class="text-green-600 font-semibold mb-3">Decoded Message:</p>
+                <textarea id="decodedMessageDisplay" rows="6" readonly class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm
+                    focus:border-green-500 focus:ring-green-500 p-3 bg-white cursor-text resize-y"></textarea>
+                <button id="copyMessageButton" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
+                        <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
+                    </svg>
+                    Copy Message
+                </button>
+            </div>
+            <p id="decodeErrorMessage" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+        </div>
+    </div>
 
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.detail || 'Encoding failed');
+    <script>
+        // IMPORTANT: Replace this with the actual URL of your deployed Hugging Face Space backend
+        const BACKEND_API_URL = "https://satyaprakashmohanty13-image-backend.hf.space"; // e.g., "https://your-username-your-space-name.hf.space"
+
+        // --- DOM Elements ---
+        // Encode Section
+        const encodeImageInput = document.getElementById('encodeImageInput');
+        const encodeImagePreviewContainer = document.getElementById('encodeImagePreviewContainer');
+        const encodeImagePreview = document.getElementById('encodeImagePreview');
+        const encodeImageError = document.getElementById('encodeImageError');
+        const messageInput = document.getElementById('messageInput');
+        const messageError = document.getElementById('messageError');
+        const encodeButton = document.getElementById('encodeButton');
+        const encodeButtonText = document.getElementById('encodeButtonText');
+        const encodeSpinner = document.getElementById('encodeSpinner');
+        const encodedResultContainer = document.getElementById('encodedResultContainer');
+        const encodedImageDisplay = document.getElementById('encodedImageDisplay');
+        const downloadEncodedImage = document.getElementById('downloadEncodedImage');
+        const encodeErrorMessage = document.getElementById('encodeErrorMessage');
+
+        // Decode Section
+        const decodeImageInput = document.getElementById('decodeImageInput');
+        const decodeImagePreviewContainer = document.getElementById('decodeImagePreviewContainer');
+        const decodeImagePreview = document.getElementById('decodeImagePreview');
+        const decodeImageError = document.getElementById('decodeImageError');
+        const decodeButton = document.getElementById('decodeButton');
+        const decodeButtonText = document.getElementById('decodeButtonText');
+        const decodeSpinner = document.getElementById('decodeSpinner');
+        const decodedResultContainer = document.getElementById('decodedResultContainer');
+        const decodedMessageDisplay = document.getElementById('decodedMessageDisplay');
+        const copyMessageButton = document.getElementById('copyMessageButton');
+        const decodeErrorMessage = document.getElementById('decodeErrorMessage');
+
+        // --- Helper Functions ---
+
+        /**
+         * Displays an image preview in the specified img tag and container.
+         * @param {HTMLInputElement} fileInput - The file input element.
+         * @param {HTMLImageElement} imgPreview - The <img> element for preview.
+         * @param {HTMLElement} previewContainer - The container for the preview.
+         * @param {HTMLElement} errorElement - The element to display error messages.
+         */
+        function displayImagePreview(fileInput, imgPreview, previewContainer, errorElement) {
+            const file = fileInput.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    errorElement.textContent = 'Please upload an image file (e.g., PNG, JPG).';
+                    errorElement.classList.remove('hidden');
+                    previewContainer.classList.add('hidden');
+                    imgPreview.src = '';
+                    return;
+                }
+                errorElement.classList.add('hidden');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgPreview.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+                imgPreview.src = '';
+                errorElement.classList.add('hidden');
+            }
         }
 
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.style.display = 'block';
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        loader.style.display = 'none';
-      }
-    };
+        /**
+         * Sets the loading state for a button.
+         * @param {HTMLButtonElement} button - The button element.
+         * @param {HTMLElement} buttonText - The span element for button text.
+         * @param {HTMLElement} spinner - The SVG spinner element.
+         * @param {boolean} isLoading - True to show loading, false to hide.
+         * @param {string} defaultText - The default text for the button.
+         */
+        function setLoadingState(button, buttonText, spinner, isLoading, defaultText) {
+            if (isLoading) {
+                button.disabled = true;
+                buttonText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                button.classList.add('opacity-75', 'cursor-not-allowed');
+            } else {
+                button.disabled = false;
+                buttonText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                button.classList.remove('opacity-75', 'cursor-not-allowed');
+                buttonText.textContent = defaultText;
+            }
+        }
 
-    document.getElementById('decode-btn').onclick = async () => {
-      const fileInput = document.getElementById('decode-file');
-      const password = document.getElementById('decode-password').value;
-      const loader = document.getElementById('loader-decode');
-      const output = document.getElementById('decoded-message');
+        /**
+         * Displays a message in a designated error/success element.
+         * @param {HTMLElement} element - The element to display the message.
+         * @param {string} message - The message text.
+         * @param {boolean} isError - True for error, false for success.
+         */
+        function displayMessage(element, message, isError) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+            if (isError) {
+                element.classList.remove('text-green-600');
+                element.classList.add('text-red-500');
+            } else {
+                element.classList.remove('text-red-500');
+                element.classList.add('text-green-600');
+            }
+        }
 
-      if (!fileInput.files.length || !password) {
-        alert('Please select image and password.');
-        return;
-      }
+        /**
+         * Clears all result and message containers.
+         */
+        function clearResults() {
+            encodedResultContainer.classList.add('hidden');
+            encodeErrorMessage.classList.add('hidden');
+            decodedResultContainer.classList.add('hidden');
+            decodeErrorMessage.classList.add('hidden');
+            encodeImageError.classList.add('hidden');
+            decodeImageError.classList.add('hidden');
+            messageError.classList.add('hidden');
+        }
 
-      const form = new FormData();
-      form.append('file', fileInput.files[0]);
-      form.append('password', password);
+        // --- Event Listeners ---
 
-      loader.style.display = 'inline-block';
-      output.textContent = '';
-
-      try {
-        const res = await fetch(BACKEND_URL + '/decode', {
-          method: 'POST',
-          body: form,
+        // Image preview for encode section
+        encodeImageInput.addEventListener('change', () => {
+            clearResults();
+            displayImagePreview(encodeImageInput, encodeImagePreview, encodeImagePreviewContainer, encodeImageError);
         });
 
-        const data = await res.json();
+        // Image preview for decode section
+        decodeImageInput.addEventListener('change', () => {
+            clearResults();
+            displayImagePreview(decodeImageInput, decodeImagePreview, decodeImagePreviewContainer, decodeImageError);
+        });
 
-        if (!res.ok) throw new Error(data.detail || 'Decoding failed');
+        // Encode Button Click
+        encodeButton.addEventListener('click', async () => {
+            clearResults();
+            const imageFile = encodeImageInput.files[0];
+            const message = messageInput.value.trim();
 
-        output.textContent = data.message;
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        loader.style.display = 'none';
-      }
-    };
-  </script>
+            let isValid = true;
+            if (!imageFile) {
+                displayMessage(encodeImageError, 'Please select an image.', true);
+                isValid = false;
+            }
+            if (!message) {
+                displayMessage(messageError, 'Message to hide cannot be empty.', true);
+                isValid = false;
+            }
 
+            if (!isValid) return;
+
+            setLoadingState(encodeButton, encodeButtonText, encodeSpinner, true, 'Encoding...');
+
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('message', message);
+
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/encode/`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    encodedImageDisplay.src = imageUrl;
+                    downloadEncodedImage.href = imageUrl;
+                    encodedResultContainer.classList.remove('hidden');
+                    displayMessage(encodeErrorMessage, 'Image encoded successfully! Download below.', false);
+                } else {
+                    const errorData = await response.json();
+                    displayMessage(encodeErrorMessage, `Error: ${errorData.detail || 'Failed to encode image.'}`, true);
+                }
+            } catch (error) {
+                console.error('Encoding error:', error);
+                displayMessage(encodeErrorMessage, `Network error or server unreachable: ${error.message}`, true);
+            } finally {
+                setLoadingState(encodeButton, encodeButtonText, encodeSpinner, false, 'Encode Image');
+            }
+        });
+
+        // Decode Button Click
+        decodeButton.addEventListener('click', async () => {
+            clearResults();
+            const imageFile = decodeImageInput.files[0];
+
+            if (!imageFile) {
+                displayMessage(decodeImageError, 'Please select an image to decode.', true);
+                return;
+            }
+
+            setLoadingState(decodeButton, decodeButtonText, decodeSpinner, true, 'Decoding...');
+
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/decode/`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    decodedMessageDisplay.value = result.message || 'No message found or message is empty.';
+                    decodedResultContainer.classList.remove('hidden');
+                    displayMessage(decodeErrorMessage, 'Message decoded successfully!', false);
+                } else {
+                    const errorData = await response.json();
+                    decodedMessageDisplay.value = ''; // Clear previous message
+                    displayMessage(decodeErrorMessage, `Error: ${errorData.detail || 'Failed to decode image.'}`, true);
+                }
+            } catch (error) {
+                console.error('Decoding error:', error);
+                decodedMessageDisplay.value = ''; // Clear previous message
+                displayMessage(decodeErrorMessage, `Network error or server unreachable: ${error.message}`, true);
+            } finally {
+                setLoadingState(decodeButton, decodeButtonText, decodeSpinner, false, 'Decode Image');
+            }
+        });
+
+        // Copy Message Button Click
+        copyMessageButton.addEventListener('click', () => {
+            const messageText = decodedMessageDisplay.value;
+            if (messageText) {
+                // Use execCommand for broader compatibility in iframes/older browsers
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = messageText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    displayMessage(decodeErrorMessage, 'Message copied to clipboard!', false);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    displayMessage(decodeErrorMessage, 'Failed to copy message. Please copy manually.', true);
+                } finally {
+                    document.body.removeChild(tempTextArea);
+                    // Hide message after a short delay
+                    setTimeout(() => {
+                        decodeErrorMessage.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+        });
+
+    </script>
 </body>
 </html>
