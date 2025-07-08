@@ -1,33 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Image Steganography</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .loader {
+      display: none;
+      margin: 10px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #download-link {
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+      color: #2c3e50;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Image Steganography</h1>
-    <section>
-      <h2>Encode Message</h2>
-      <input type="file" id="encode-file" accept="image/*" />
-      <textarea id="message" placeholder="Enter message"></textarea>
-      <input type="password" id="password" placeholder="Enter password">
-      <button id="encode-btn">Encode</button>
-      <div id="loader-encode" class="loader" style="display:none"></div>
-      <a id="download-link" style="display:none">Download Stego Image</a>
-    </section>
 
-    <section>
-      <h2>Decode Message</h2>
-      <input type="file" id="decode-file" accept="image/*" />
-      <input type="password" id="decode-password" placeholder="Enter password">
-      <button id="decode-btn">Decode</button>
-      <div id="loader-decode" class="loader" style="display:none"></div>
-      <p id="decoded-message"></p>
-    </section>
-  </div>
-  <script src="script.js"></script>
+  <h1>🧠 Image Steganography</h1>
+
+  <section>
+    <h2>🔒 Encode Message</h2>
+    <input type="file" id="encode-file" accept="image/*" />
+    <textarea id="message" placeholder="Enter secret message"></textarea>
+    <input type="password" id="password" placeholder="Enter password" />
+    <button id="encode-btn">Encode</button>
+    <div id="loader-encode" class="loader"></div>
+    <a id="download-link" download="stego.png">Download Stego Image</a>
+  </section>
+
+  <section>
+    <h2>🔓 Decode Message</h2>
+    <input type="file" id="decode-file" accept="image/*" />
+    <input type="password" id="decode-password" placeholder="Enter password" />
+    <button id="decode-btn">Decode</button>
+    <div id="loader-decode" class="loader"></div>
+    <p id="decoded-message" style="margin-top: 10px; font-weight: bold;"></p>
+  </section>
+
+  <script>
+    const BACKEND_URL = 'https://satyaprakashmohanty13--image-backend.hf.space';
+
+    document.getElementById('encode-btn').onclick = async () => {
+      const fileInput = document.getElementById('encode-file');
+      const message = document.getElementById('message').value;
+      const password = document.getElementById('password').value;
+      const loader = document.getElementById('loader-encode');
+      const link = document.getElementById('download-link');
+
+      if (!fileInput.files.length || !message || !password) {
+        alert('Please fill all fields.');
+        return;
+      }
+
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      form.append('message', message);
+      form.append('password', password);
+
+      loader.style.display = 'inline-block';
+      link.style.display = 'none';
+
+      try {
+        const res = await fetch(BACKEND_URL + '/encode', {
+          method: 'POST',
+          body: form,
+        });
+
+        if (!res.ok) throw new Error('Encoding failed');
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.style.display = 'block';
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        loader.style.display = 'none';
+      }
+    };
+
+    document.getElementById('decode-btn').onclick = async () => {
+      const fileInput = document.getElementById('decode-file');
+      const password = document.getElementById('decode-password').value;
+      const loader = document.getElementById('loader-decode');
+      const output = document.getElementById('decoded-message');
+
+      if (!fileInput.files.length || !password) {
+        alert('Please select image and password.');
+        return;
+      }
+
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      form.append('password', password);
+
+      loader.style.display = 'inline-block';
+      output.textContent = '';
+
+      try {
+        const res = await fetch(BACKEND_URL + '/decode', {
+          method: 'POST',
+          body: form,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.detail || 'Decoding failed');
+
+        output.textContent = data.message;
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        loader.style.display = 'none';
+      }
+    };
+  </script>
+
 </body>
 </html>
