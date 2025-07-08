@@ -60,6 +60,14 @@
                 <p id="messageError" class="text-red-500 text-sm mt-2 hidden"></p>
             </div>
 
+            <!-- Temporary Debug Display -->
+            <div id="debugMessageDisplay" class="hidden bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg relative text-sm">
+                <p class="font-bold">Debug Info (Temporary):</p>
+                <p>Message being sent: <span id="debugMessageContent" class="font-mono"></span></p>
+                <p>Length: <span id="debugMessageLength" class="font-mono"></span></p>
+            </div>
+
+
             <!-- Encode Button -->
             <button id="encodeButton" class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
@@ -153,6 +161,12 @@
         const encodedImageDisplay = document.getElementById('encodedImageDisplay');
         const downloadEncodedImage = document.getElementById('downloadEncodedImage');
         const encodeErrorMessage = document.getElementById('encodeErrorMessage');
+
+        // Debug elements
+        const debugMessageDisplay = document.getElementById('debugMessageDisplay');
+        const debugMessageContent = document.getElementById('debugMessageContent');
+        const debugMessageLength = document.getElementById('debugMessageLength');
+
 
         // Decode Section
         const decodeImageInput = document.getElementById('decodeImageInput');
@@ -252,6 +266,7 @@
             encodeImageError.classList.add('hidden');
             decodeImageError.classList.add('hidden');
             messageError.classList.add('hidden');
+            debugMessageDisplay.classList.add('hidden'); // Hide debug info
         }
 
         // --- Event Listeners ---
@@ -274,6 +289,12 @@
             const imageFile = encodeImageInput.files[0];
             const message = messageInput.value.trim();
 
+            // --- DEBUG DISPLAY ---
+            debugMessageContent.textContent = `'${message}'`;
+            debugMessageLength.textContent = message.length;
+            debugMessageDisplay.classList.remove('hidden');
+            // --- END DEBUG DISPLAY ---
+
             let isValid = true;
             if (!imageFile) {
                 displayMessage(encodeImageError, 'Please select an image.', true);
@@ -290,7 +311,7 @@
 
             const formData = new FormData();
             formData.append('image', imageFile);
-            formData.append('message', message); // FIXED: Removed the extra parenthesis here
+            formData.append('message', message);
 
             try {
                 const response = await fetch(`${BACKEND_API_URL}/encode/`, {
@@ -314,6 +335,8 @@
                 displayMessage(encodeErrorMessage, `Network error or server unreachable: ${error.message}`, true);
             } finally {
                 setLoadingState(encodeButton, encodeButtonText, encodeSpinner, false, 'Encode Image');
+                // Hide debug info after operation completes
+                debugMessageDisplay.classList.add('hidden');
             }
         });
 
@@ -385,3 +408,4 @@
     </script>
 </body>
 </html>
+
